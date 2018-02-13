@@ -25,6 +25,7 @@ Today we will go over the basics of what a neural net is. This will fall into th
 - Activation Functions
 - Layers
 - Training
+- An example
 
 ---
 
@@ -40,7 +41,7 @@ Task: Fit logistic regression to classify the presence of a dog in a photograph
 
 ---
 
-# Why do we need neural nets cont...
+## Why do we need neural nets cont...
 
 
 ```{r, cache= TRUE}
@@ -57,7 +58,7 @@ Another way we could lower the dimensionality of this would be to scan it for th
 
 ---
 
-# Why do we need neural nets cont...
+## Why do we need neural nets cont...
 
 Or... we could fit a model that specializes in high-dimensional data that could automatically learn these features for us and thus require less data and no laboreous generation of features. 
 
@@ -80,7 +81,7 @@ A neuron is simply an entity that's value is a function of its inputs.
 
 ---
 
-# Neurons cont.
+## Neurons cont.
 
 What's another example of this format?
 
@@ -133,7 +134,7 @@ Where it gets interesting is when we let the inputs to a layer be the results of
 
 ---
 
-# Layers cont.
+## Layers cont.
 
 So instead of a simple matrix multiplication to get our desired output we compose lots of matrix multiplications.
 
@@ -216,7 +217,7 @@ The only parameters we are tuning are the weights for the linear transformations
 
 We will use the R library `Keras`.
 
-```{r, cache = TRUE}
+```{r}
 library(keras)
 ```
 
@@ -280,7 +281,7 @@ Now we can let the model train!
 history <- model %>% fit(
   x_train, y_train,
   batch_size = 128,
-  epochs = 10,
+  epochs = 7,
   verbose = 1,
   validation_split = 0.2
 )
