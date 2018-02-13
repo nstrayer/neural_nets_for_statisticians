@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Intro to Neural Nets</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Nick Strayer" />
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Intro to Neural Nets
+## For Statisticians
+### Nick Strayer
+### 2018/02/14
+
+---
+
+
+
+
+#What we're going to cover
+
+Today we will go over the basics of what a neural net is. This will fall into the following order
+
+- Why do we need neural nets?
+- Neurons
+- Activation Functions
+- Layers
+- Training
+
+---
+
+# Why do we need neural nets?
+
+.pull-left[
+Task: Fit logistic regression to classify the presence of a dog in a photograph
+]
+.pull-right[
+&lt;img src = 'data/doggo.png' height = 300 /&gt;
+]
+
+
+---
+
+# Why do we need neural nets cont...
+
+
+
+```r
+img &lt;- png::readPNG("data/doggo.png")
+dim(img)
+```
+
+```
+## [1] 581 468   4
+```
+
+So we just need to setup our logistic regression with 581 `\(\times\)` 468 `\(\times\)` 4 = 1087632 covariates. 
+
+We could however note that there are definitely correlations between two neighboring pixels and lower our fit by using something like a spline... How do we do splines in 4 dimensions?
+
+Another way we could lower the dimensionality of this would be to scan it for things like a nose or ears and then just make our data a function of those features... Now we have to hard code them. 
+
+
+---
+
+# Why do we need neural nets cont...
+
+Or... we could fit a model that specializes in high-dimensional data that could automatically learn these features for us and thus require less data and no laboreous generation of features. 
+
+This is where neural networks shine: 
+
+&gt; The data is very high dimensional and there are correlations within it that can be exploited but manually exploiting them
+is hard.
+
+---
+
+# Neurons
+
+Going back to the basics now. The most fundemental unit of a neural network is the 'neuron.'
+
+A neuron is simply an entity that's value is a function of its inputs. 
+
+.center[
+ &lt;img src = 'neuron_diagram.png' height = 400/&gt;
+]
+
+---
+
+# Neurons cont.
+
+What's another example of this format?
+
+...
+
+_Regressions!_
+
+You can simply think of a neuron as a GLM of its inputs.
+
+E.g. `$$g(x_1, x_2, x_3, x_4) = \sigma(\beta_0 + \beta_1x_1 + \beta_2x_2 + \beta_3x_3 + \beta_4x_4),$$` where `\(\sigma(x) = \frac{1}{1 + \exp(-x)}\)` is just a logistic regression.
+---
+
+# Activation Functions
+
+
+We're not limited to the function of the inputs to a neuron being a sigmoid. We can choose any function we want as long as it maps to a single real number. 
+
+`$$g: \mathrel{R}^k \to \mathrel{R^1}$$`
+For computational convenience (more on this in a second) we constrain this function to having the form of a function composition of a linear combination of inputs and then a 'squashing' or __activation function__. 
+
+`$$g(\underline{X}, \underline{\beta}) = f(\underline{X} \underline{\beta}), \text{where } f: \mathrel{R}^1 \to \mathrel{R^1}$$`
+
+What this activation function does is totally up to us, but usually it will do something like squash the linear combination to between 0 and 1 or zero out negative values... The only constraint we have is that we want(but don't need) it to be differentiable (more on this in a second).
+
+
+
+---
+class: center, middle
+&lt;img src = 'https://dwaithe.github.io/images/activationFunctions.png'/&gt;
+---
+
+# Layers
+
+
+.pull-left[
+
+_Okay, so how does this do anything interesting?_
+
+Neural networks take these neurons and arrange them into __layers.__
+
+A layer is a collection of neurons that all take the same inputs.
+
+Where it gets interesting is when we let the inputs to a layer be the results of a previous layer. This is called having a 'hidden' layer. I.e. it is not seen as the input or as the final output. 
+]
+.pull-right[
+&lt;img src = 'http://nickstrayer.me/qualifying_exam/figures/computation_graph.png' height = 400 /&gt;
+
+]
+
+
+---
+
+# Layers cont.
+
+So instead of a simple matrix multiplication to get our desired output we compose lots of matrix multiplications.
+
+
+
+.pull-left[
+
+Let's let `\(W_{i,j}\)` be the weight matrix governing the linear transformation between layer `\(i\)` and layer `\(j\)`. The dimension of `\(W_{i,j}\)` will be `\(\mathrel{R}^{|L_i|} \times \mathrel{R}^{|L_j|}\)` and can be thought of as a bunch of `\(\beta\)` vectors stacked together to return a new vector of the length of the target layer: `\(|L_j|\)`. 
+
+`$$\begin{aligned}
+X_1 &amp;= (X_{0}\cdot W_{0,1})  \otimes f_1 \\
+X_2 &amp;= (X_{1}\cdot W_{1,2})  \otimes f_2 \\
+... &amp; \\
+X_r &amp;= (X_{r-1}\cdot W_{r-1,r})  \otimes f_r \\
+\end{aligned}$$`
+]
+.pull-right[
+&lt;img src = 'operations.png' height = 400 /&gt;
+]
+
+
+---
+
+# Training
+
+So we understand how we can go from our input data to some computed outcome, but how do we make that outcome what we want it to be?
+
+Unfortunately neural network optimization is not a convex problem so we have to use use an approximate iterative technique to attempt to find the global minimum for our cost function. 
+
+Let's start by looking at the cost function. 
+
+---
+
+## Cost function
+
+What do we want to optimize?
+
+First we have to think about what our output is: is it a binary variable like a logistic regression? Use what is known in the ML world as "Categorical Cross Entropy" or simply the KLD between your predictions and the emperical distribution of the data. 
+
+`$$L(\theta) = -\frac{1}{n}\sum_{i = 1}^n\left[ y_i\log(\hat{y}_i) + (1 - y_i)\log(1 - \hat{y}_i)\right]$$`
+
+Doing a regression problems? We can just use mean-squared-error. 
+
+`$$\text{MSE}(\theta) = -\frac{1}{n} \sum_{i = 1}^{n} (\hat{y}^{(i)} - y^{(i)})^2$$`
+
+In both of these `\(\theta\)` represents all of the weights in our network. 
+
+---
+## The gradient
+
+Now that we have a cost function for our model and the actual math in our model in order to optimize we need to calculate the gradient of every weights with respect to that loss function. This sounds daunting but due to a wonderful property of the chain-rule it's actually rather easy. 
+
+`$$\frac{dy}{dx_i} = \sum_{j}\frac{dy}{dz_j}\frac{dz_j}{dx_i}$$`
+_Multivariate chain rule_
+
+
+Let's think about how we could represent our model as a single function...
+
+`$$\hat{y} = g_n \circ g_{n-1} \circ ... \circ g_1(\underline{X})$$`
+
+Remember how earlier we stated we wanted our activation functions to be differentiable? If every step in this procedure is differentiable we can apply the chain rule to calculate the derivative of every single parameter.
+
+
+---
+
+## The gradient visualized
+
+.center[
+&lt;img src = 'http://nickstrayer.me/qualifying_exam/figures/backprop.png' height = 300 /&gt;
+]
+
+This is called __back propagation.__
+
+
+The only parameters we are tuning are the weights for the linear transformations: `\(W_{i,j}\)` and the derivative of each weight is only dependent upon the nodes that fall in front of it in the network.
+
+---
+
+# Actually doing it.
+
+We will use the R library `Keras`.
+
+
+```r
+library(keras)
+```
+
+`Keras` has a helpful function for loading in a classic dataset `MNIST` for demoing models.
+
+```r
+# The data, shuffled and split between train and test sets
+c(c(x_train, y_train), c(x_test, y_test)) %&lt;-% dataset_mnist()
+
+x_train &lt;- array_reshape(x_train, c(nrow(x_train), 784))
+x_test &lt;- array_reshape(x_test, c(nrow(x_test), 784))
+x_train &lt;- x_train / 255 # Transform RGB values into [0,1] range
+x_test &lt;- x_test / 255
+cat(nrow(x_train), 'train samples\n')
+```
+
+```
+## 60000 train samples
+```
+
+```r
+cat(nrow(x_test), 'test samples\n')
+```
+
+```
+## 10000 test samples
+```
+Comes with lots of data. 
+
+---
+
+Convert our single outcome column to a 1-hot or dummy encoded 10 dimensional vector.
+
+
+```r
+num_classes &lt;- 10
+# Convert class vectors to binary class matrices
+y_train &lt;- to_categorical(y_train, num_classes)
+y_test &lt;- to_categorical(y_test, num_classes)
+```
+
+---
+
+## Setting up the model
+
+We're going to have two hidden layers, one with 256 neurons and the other with 128. Since we have ten classes our last layer has ten neurons each corresponding to a given class. 
+
+
+```r
+# Define Model --------------------------------------------------------------
+model &lt;- keras_model_sequential()
+model %&gt;% 
+  layer_dense(units = 256, activation = 'relu', input_shape = c(784)) %&gt;% 
+  layer_dense(units = 128, activation = 'relu') %&gt;%
+  layer_dense(units = 10, activation = 'softmax')
+
+
+model %&gt;% compile(
+  loss = 'categorical_crossentropy',
+  optimizer = optimizer_rmsprop(),
+  metrics = c('accuracy')
+)
+```
+
+---
+
+## Training it
+
+Now we can let the model train!
+
+.pull-left[
+
+
+```r
+# Fit model to data
+history &lt;- model %&gt;% fit(
+  x_train, y_train,
+  batch_size = 128,
+  epochs = 10,
+  verbose = 1,
+  validation_split = 0.2
+)
+```
+
+98% test accuracy, not too bad. We did overfit, however, how can we fix this?
+
+]
+
+.pull-right[
+![](intro_files/figure-html/unnamed-chunk-7-1.png)&lt;!-- --&gt;
+]
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+  }
+});
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
