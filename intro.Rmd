@@ -1,6 +1,6 @@
 ---
 title: "Intro to Neural Nets"
-subtitle: "For Statisticians"
+subtitle: "...for statisticians"
 author: "Nick Strayer"
 date: "2018/02/14"
 output:
@@ -24,6 +24,7 @@ Today we will go over the basics of what a neural net is. This will fall into th
 - Neurons
 - Activation Functions
 - Layers
+- Universal Approximation Theorem
 - Training
 - An example
 
@@ -155,6 +156,14 @@ X_r &= (X_{r-1}\cdot W_{r-1,r})  \otimes f_r \\
 <img src = 'operations.png' height = 400 />
 ]
 
+---
+class: middle
+
+# Universal Approximation Theorem
+
+With a sufficiently large hidden layer, we can approximate any borel-measurable function. 
+
+[Let's see it](https://beta.observablehq.com/@nstrayer/the-universal-approximation-theorem)
 
 ---
 
