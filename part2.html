@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Neural Networks for Statisticians</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Nick Strayer" />
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Neural Networks for Statisticians
+## part 2
+### Nick Strayer
+### 2018/02/16
+
+---
+
+
+
+
+# Outline
+
+- Recap
+- Regularization
+  - L1 and L2
+  - Dropout
+- Architectures
+  - Convolutional 
+- Spell casting Demo
+
+---
+
+# Recap of last lecture
+
+We rushed over: 
+
+- What a neuron is.
+- How neurons are assembled to make a 'layer'
+- How we train the network with gradient descent.
+
+---
+## What's a Neuron?
+
+Simply a linear combination of its inputs that are then squashed by some __activation function.__ 
+
+Essentially just a GLM.
+
+.center[
+ &lt;img src = 'neuron_diagram.png' height = 400/&gt;
+]
+---
+
+```r
+library(tidyverse)
+
+expand.grid(x1 = seq(-1,1, length.out = 100), x2 = seq(-1,1, length.out = 100))%&gt;%
+  mutate(
+    linear = 0.2 + x1*0.4 + x2*-1.5,
+    final = ifelse(linear &gt; 0, linear, 0)
+  ) %&gt;% 
+  gather(stage, value, -x1, -x2 ) %&gt;% 
+  ggplot(aes(x = x1, y = x2, fill = value)) +
+  geom_raster() +
+  scale_fill_gradient2(low = 'orangered', mid = 'white', high = 'steelblue') +
+  facet_grid(.~stage)
+```
+
+&lt;img src="part2_files/figure-html/unnamed-chunk-1-1.png" style="display: block; margin: auto;" /&gt;
+
+---
+## Layers of Neurons
+
+.pull-left[
+What makes neural networks special is that we don't just use one neuron, we stack together a bunch of them into what is called a __layer.__
+
+These layers can then act as input to new layers, allowing the network to learn complex and hierarchical patterns in the data without any prespecification. 
+
+]
+.pull-right[
+&lt;img src = 'http://nickstrayer.me/qualifying_exam/figures/computation_graph.png' height = 400 /&gt;
+]
+
+---
+## Geometric intuition
+
+.center[
+&lt;img src = 'http://colah.github.io/posts/2014-03-NN-Manifolds-Topology/img/spiral.1-2.2-2-2-2-2-2.gif' height = 450 /&gt;
+]
+
+
+---
+
+# Regularization
+
+We can do regularization just like we do in normal linear models: with the L1 (Ridge) and L2 (Lasso) penalization types, or the L1 + L2 (Elastic net)
+
+However, Neural nets have a particularly interested form of regularization known as Dropout. 
+
+---
+
+## Dropout
+
+When training a model with dropout any given neuron in the hidden layers can randomly be 'dropped' from the network.
+
+This means that its value is set to zero regardless of its inputs. The model is then trained just like that neuron never existed. 
+
+Intuitively this helps to network learn alternative paths to a solution, rather than overfitting on some particular bias in the training set. 
+
+E.g. Identifying a photo of a house could be overfit by every house photo having a blue sky in the background. Dropout would sometimes force the network to learn without it's 'blue sky' neuron, making it more likely to look for other features. 
+
+---
+
+## Redoing the model from before with dropout.
+
+
+
+
+```r
+model &lt;- keras_model_sequential()
+model %&gt;% 
+  layer_dense(units = 256, activation = 'relu', input_shape = c(784)) %&gt;% 
+* layer_dropout(rate = 0.4) %&gt;% 
+  layer_dense(units = 128, activation = 'relu') %&gt;%
+* layer_dropout(rate = 0.4) %&gt;% 
+  layer_dense(units = 10, activation = 'softmax')
+```
+
+&lt;img src="part2_files/figure-html/unnamed-chunk-4-1.png" style="display: block; margin: auto;" /&gt;
+
+No more overfitting!
+---
+
+# Moving beyond full-connected networks
+
+While these networks are powerful and the degrees of freedom issue is not clear-cut, there are still a lot of parameters.
+
+Some alternative 'architectures' have been proposed to deal with this by sharing the weights for different parts of the model in intelegent ways. 
+
+
+
+---
+
+# The Convolutional Network
+
+The convolutional neural network exploits spatial correlation in data by constructing feature detectors that slide over the spatial dimensions.
+
+This effectively gives an indicator of if a given feature was seen in a given region of the data. 
+
+Originally developed for use in time-series data, but now primarily used in computer vision. 
+
+
+---
+# Some terms
+
+- __Stride__: How many units your detector moves each step. 1 = output is same size as input. 
+- __Padding__: How do you deal with the edges? You can pad them with zeros or simply start your detector from the edge.
+- __Kernel size__: How big an edge of your detector is. 
+- __Pooling__: The act of taking the output of your detector scanned over the data and pooling it to something like the max or the average.
+    - Good for reducing dimension and giving the model the ability to be robust to shifts in the features. 
+
+---
+class:center
+
+&lt;img src = 'http://nickstrayer.me/qualifying_exam/figures/convolutional_explainer.jpeg' height = 670/&gt;
+
+---
+class: center, middle
+## A better demo than I can give
+
+
+[Convolution Visualizer](https://ezyang.github.io/convolution-visualizer/index.html)
+---
+class: middle
+# Demo on accelerometer data. 
+
+It's fun to recreate the same demos that everyone has done a million times but let's see a convolutional neural network done on real data. 
+
+---
+
+## The Model
+
+.pull-left[
+  __Input__: Data is three directions over a spatial (time) dimension. 
+  
+  __Desired Output__: A classification of what spell was cast in a two second recording interval.
+  
+  __Model__: Convolutional neural network with a _max pooling_ layer that feeds to a single dense layer. 
+  
+]
+.pull-right[
+.center[
+&lt;img src = 'http://nickstrayer.me/dataDayTexas/modelShape.svg' height = 500/&gt;
+
+]
+]
+
+---
+
+# The Recurrent Network
+
+Shares weights by passing data through exact same network at each successive step in the data. 
+
+.center[
+&lt;img src = 'http://nickstrayer.me/qualifying_exam/figures/rnn_unrolled.png' height = 380/&gt;
+]
+
+More info: [nickstrayer.me/qualifying_exam/architectures.html#recurrent-neural-networks](http://nickstrayer.me/qualifying_exam/architectures.html#recurrent-neural-networks)
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+  }
+});
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
