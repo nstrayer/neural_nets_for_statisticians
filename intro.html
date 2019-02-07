@@ -19,59 +19,91 @@ class: center, middle, inverse, title-slide
 ---
 
 
+&lt;style&gt;
+.small-text{
+    font-size: 15px;
+    font-style: italic;
+}
+&lt;/style&gt;
+
 
 
 #What we're going to cover
 
 Today we will go over the basics of what a neural net is. This will fall into the following order
 
-- Why do we need neural nets?
+- Motivation for neural nets
 - Neurons
-- Activation Functions
+- Activation functions
 - Layers
-- Universal Approximation Theorem
+- Universal approximation theorem
 - Training
 - An example
 
 ---
 
-# Why do we need neural nets?
+# Motivation for neural nets
 
 .pull-left[
-Task: Fit logistic regression to classify the presence of a dog in a photograph
+Task: Fit logistic regression to classify the presence of a cat in a photograph
 ]
 .pull-right[
-&lt;img src = 'data/doggo.png' height = 300 /&gt;
+&lt;img src = 'data/flumpert_blanket.png' height = 300 /&gt;
 ]
 
 
 ---
 
-## Why do we need neural nets cont...
+## The data
 
 
 
 ```r
-img &lt;- png::readPNG("data/doggo.png")
+img &lt;- png::readPNG("data/flumpert_blanket.png")
 dim(img)
 ```
 
 ```
-## [1] 581 468   4
+## [1] 1614 1614    4
 ```
 
-So we just need to setup our logistic regression with 581 `\(\times\)` 468 `\(\times\)` 4 = 1087632 covariates. 
+So we just need to setup our logistic regression with 1614 `\(\times\)` 1614 `\(\times\)` 4 = 10419984 covariates. 
+
+.center[
+&lt;img src = 'data/flumpert_shock.png' height = 280 /&gt;
+
+.small-text[Uh oh, better collect more observations.]
+]
+
+---
+
+## Thinking like a statistician
 
 We could however note that there are definitely correlations between two neighboring pixels and lower our fit by using something like a spline... How do we do splines in 4 dimensions?
+
+
+.pull-left[
+&lt;img src = 'https://upload.wikimedia.org/wikipedia/commons/f/fd/Spline_%28PSF%29.png' height = 200 /&gt;
+
+.small-text[How do these things even work? [Source](https://en.wiktionary.org/wiki/spline)
+]
+]
+.pull-right[
+&lt;img src = 'https://www.catster.com/wp-content/uploads/2015/06/e0037097592d9c6be5da38948624d552.jpg' height = 200 /&gt;
+
+.small-text[Better hope you can draw a cat well. [Source](https://www.catster.com/lifestyle/kid-cat-drawings)] 
+]
 
 Another way we could lower the dimensionality of this would be to scan it for things like a nose or ears and then just make our data a function of those features... Now we have to hard code them. 
 
 
+
 ---
 
-## Why do we need neural nets cont...
+## An alternative?
 
-Or... we could fit a model that specializes in high-dimensional data that could automatically learn these features for us and thus require less data and no laboreous generation of features. 
+Or... we could fit a model that specializes in high-dimensional data that could __automatically learn__ features for us and thus require less data and no laboreous generation of features. 
+
 
 This is where neural networks shine: 
 
@@ -80,11 +112,17 @@ is hard.
 
 ---
 
+class: middle, center
+
+# Nueral network basics
+
+---
+
 # Neurons
 
-Going back to the basics now. The most fundemental unit of a neural network is the 'neuron.'
+The most fundemental unit of a neural network is the 'neuron.'
 
-A neuron is simply an entity that's value is a function of its inputs. 
+A neuron is simply an entity thats value is a function of its inputs. 
 
 .center[
  &lt;img src = 'neuron_diagram.png' height = 400/&gt;
@@ -103,6 +141,11 @@ _Regressions!_
 You can simply think of a neuron as a GLM of its inputs.
 
 E.g. `$$g(x_1, x_2, x_3, x_4) = \sigma(\beta_0 + \beta_1x_1 + \beta_2x_2 + \beta_3x_3 + \beta_4x_4),$$` where `\(\sigma(x) = \frac{1}{1 + \exp(-x)}\)` is just a logistic regression.
+
+
+.pull-right[
+ &lt;img src = 'data/flumpert_stare.png' height = 200/&gt;
+]
 ---
 
 # Activation Functions
@@ -115,7 +158,7 @@ For computational convenience (more on this in a second) we constrain this funct
 
 `$$g(\underline{X}, \underline{\beta}) = f(\underline{X} \underline{\beta}), \text{where } f: \mathrel{R}^1 \to \mathrel{R^1}$$`
 
-What this activation function does is totally up to us, but usually it will do something like squash the linear combination to between 0 and 1 or zero out negative values... The only constraint we have is that we want(but don't need) it to be differentiable (more on this in a second).
+What this activation function does is totally up to us, but usually it will do something like squash the linear combination to between 0 and 1 or zero out negative values... The only constraint we have is that we want (but don't need) it to be differentiable (more on this in a second).
 
 
 
@@ -135,7 +178,7 @@ Neural networks take these neurons and arrange them into __layers.__
 
 A layer is a collection of neurons that all take the same inputs.
 
-Where it gets interesting is when we let the inputs to a layer be the results of a previous layer. This is called having a 'hidden' layer. I.e. it is not seen as the input or as the final output. 
+Where it gets interesting is when we let the inputs to a layer be the results of a previous layer. This is called having a 'hidden' layer. I.e. the layer outputs results to another non-final layer.
 ]
 .pull-right[
 &lt;img src = 'http://nickstrayer.me/qualifying_exam/figures/computation_graph.png' height = 400 /&gt;
@@ -181,9 +224,13 @@ With a sufficiently large hidden layer, we can approximate any borel-measurable 
 
 So we understand how we can go from our input data to some computed outcome, but how do we make that outcome what we want it to be?
 
-Unfortunately neural network optimization is not a convex problem so we have to use use an approximate iterative technique to attempt to find the global minimum for our cost function. 
+Unfortunately neural network optimization is __not a convex problem__ so we have to use use an approximate iterative technique to attempt to find the global minimum for our cost function. 
 
 Let's start by looking at the cost function. 
+
+.center[
+ &lt;img src = 'data/flumpert_sit.png' height = 300/&gt;
+]
 
 ---
 
@@ -247,10 +294,10 @@ library(keras)
 # The data, shuffled and split between train and test sets
 c(c(x_train, y_train), c(x_test, y_test)) %&lt;-% dataset_mnist()
 
-x_train &lt;- array_reshape(x_train, c(nrow(x_train), 784))
-x_test &lt;- array_reshape(x_test, c(nrow(x_test), 784))
-x_train &lt;- x_train / 255 # Transform RGB values into [0,1] range
-x_test &lt;- x_test / 255
+# Reshape arrays and transform RGB values into [0,1] range
+x_train &lt;- array_reshape(x_train, c(nrow(x_train), 784)) / 255
+x_test &lt;- array_reshape(x_test, c(nrow(x_test), 784)) / 255
+
 cat(nrow(x_train), 'train samples\n')
 ```
 
@@ -274,9 +321,35 @@ Convert our single outcome column to a 1-hot or dummy encoded 10 dimensional vec
 
 ```r
 num_classes &lt;- 10
+
+# Outcomes start as integers...
+y_train %&gt;% head()
+```
+
+```
+##      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]
+## [1,]    0    0    0    0    0    1    0    0    0     0
+## [2,]    1    0    0    0    0    0    0    0    0     0
+## [3,]    0    0    0    0    1    0    0    0    0     0
+## [4,]    0    1    0    0    0    0    0    0    0     0
+## [5,]    0    0    0    0    0    0    0    0    0     1
+## [6,]    0    0    1    0    0    0    0    0    0     0
+```
+
+
+
+```r
 # Convert class vectors to binary class matrices
+# to_categorical is a helper keras function for doing this. 
 y_train &lt;- to_categorical(y_train, num_classes)
 y_test &lt;- to_categorical(y_test, num_classes)
+
+# And end as a matrix.
+y_train %&gt;% head()
+```
+
+```
+## [1] 1 0 1 1 1 1
 ```
 
 ---
@@ -290,11 +363,11 @@ We're going to have two hidden layers, one with 256 neurons and the other with 1
 # Define Model --------------------------------------------------------------
 model &lt;- keras_model_sequential()
 model %&gt;% 
-  layer_dense(units = 256, activation = 'relu', input_shape = c(784)) %&gt;% 
-  layer_dense(units = 128, activation = 'relu') %&gt;%
-  layer_dense(units = 10, activation = 'softmax')
+  layer_dense(units=256, activation='relu', input_shape=c(784)) %&gt;% 
+  layer_dense(units=128, activation='relu') %&gt;%
+  layer_dense(units=10,  activation='softmax')
 
-
+# Compile model with correct loss and optimization type
 model %&gt;% compile(
   loss = 'categorical_crossentropy',
   optimizer = optimizer_rmsprop(),
@@ -327,7 +400,7 @@ history &lt;- model %&gt;% fit(
 ]
 
 .pull-right[
-![](intro_files/figure-html/unnamed-chunk-7-1.png)&lt;!-- --&gt;
+![](intro_files/figure-html/unnamed-chunk-8-1.png)&lt;!-- --&gt;
 ]
     </textarea>
 <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
@@ -346,12 +419,23 @@ if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
   d.head.appendChild(s);
 })();</script>
 
-<script type="text/x-mathjax-config">
-MathJax.Hub.Config({
-  tex2jax: {
-    skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
   }
-});
+})();
 </script>
 <!-- dynamically load mathjax for compatibility with self-contained -->
 <script>
